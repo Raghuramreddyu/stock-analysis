@@ -157,6 +157,35 @@ export async function publishStock(stock) {
   return data;
 }
 
+export async function publishAllStocks(stocks) {
+
+  const token = getAccessToken();
+
+  const response = await fetch(
+    "http://127.0.0.1:8000/api/admin/stocks/publish-all",
+    {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+
+      body: JSON.stringify(stocks)
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.detail || "Failed to publish stocks"
+    );
+  }
+
+  return data;
+}
+
 export async function getStockHistory(ticker) {
 
   const token = getAccessToken();

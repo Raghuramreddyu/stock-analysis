@@ -7,11 +7,9 @@ from fastapi import (
 )
 
 import os
-import shutil
-import cv2
+import tempfile
 
 from datetime import date
-
 from pymongo.errors import DuplicateKeyError
 
 from app.services.image_service import preprocess_image
@@ -21,17 +19,11 @@ from app.services.parser_service import parse_stock_data
 from app.core.auth import require_admin
 
 from app.models.stock import (
-    save_stock_snapshot,
-    save_upload_metadata,
-    get_stock_snapshot
+    save_stock_snapshot
 )
 
 
 router = APIRouter()
-
-UPLOAD_DIR = "uploads"
-
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 def format_stock(stock):
@@ -39,7 +31,6 @@ def format_stock(stock):
     Convert stock data into one consistent format
     for the frontend.
     """
-
     return {
         "ticker": stock["ticker"],
         "price": stock["price"],
@@ -82,143 +73,145 @@ async def upload_image(
         )
 
     # -----------------------------
-    # 1. Save original image
+    # 1. Create temporary image file
     # -----------------------------
 
-    file_path = os.path.join(
-        UPLOAD_DIR,
-        file.filename
-    )
+    temp_file_path = None
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    try:
 
-    # -----------------------------
-    # 2. Preprocess image
-    # -----------------------------
+        file_extension = os.path.splitext(
+            file.filename
+        )[1]
 
-    processed_image = preprocess_image(file_path)
+        with tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=file_extension
+        ) as temp_file:
 
-    processed_filename = f"processed_{file.filename}"
+            temp_file_path = temp_file.name
 
-    processed_path = os.path.join(
-        UPLOAD_DIR,
-        processed_filename
-    )
+            contents = await file.read()
 
-    cv2.imwrite(
-        processed_path,
-        processed_image
-    )
+            temp_file.write(contents)
 
-    # -----------------------------
-    # 3. OCR
-    # -----------------------------
+        # -----------------------------
+        # 2. Preprocess image
+        # -----------------------------
 
-    extracted_text = extract_text(file_path)
-
-    print("========== OCR OUTPUT ==========")
-    print(extracted_text)
-    print("================================")
-
-    if not extracted_text.strip():
-        raise HTTPException(
-            status_code=400,
-            detail="Could not extract text from the image"
+        processed_image = preprocess_image(
+            temp_file_path
         )
 
-    # -----------------------------
-    # 4. Parse stock data
-    # -----------------------------
+        # -----------------------------
+        # 3. OCR
+        # -----------------------------
 
-    parsed_stocks = parse_stock_data(extracted_text)
-
-    print("========== PARSED STOCKS ==========")
-    print(parsed_stocks)
-    print("====================================")
-
-    if not parsed_stocks:
-        raise HTTPException(
-            status_code=400,
-            detail="No valid stock data found in the image"
+        extracted_text = extract_text(
+            temp_file_path
         )
 
-    # -----------------------------
-    # 5. Trading date
-    # -----------------------------
+        print("========== OCR OUTPUT ==========")
+        print(extracted_text)
+        print("================================")
 
-    trading_date = date.today().isoformat()
-
-    # -----------------------------
-    # 6. Save upload metadata
-    # -----------------------------
-
-    upload_id = save_upload_metadata(
-        filename=file.filename,
-        processed_filename=processed_filename,
-        trading_date=trading_date,
-        stock_count=len(parsed_stocks)
-    )
-
-    # -----------------------------
-    # 7. Save stocks to MongoDB
-    # -----------------------------
-
-    saved_stocks = []
-
-    duplicates = []
-
-    new_records = 0
-
-    for stock in parsed_stocks:
-
-        stock["trading_date"] = trading_date
-
-        # Connect stock to upload
-        stock["upload_id"] = upload_id
-
-        try:
-
-            stock_id = save_stock_snapshot(stock)
-
-            new_records += 1
-
-            formatted_stock = format_stock(stock)
-
-            formatted_stock["id"] = stock_id
-
-            saved_stocks.append(
-                formatted_stock
+        if not extracted_text.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Could not extract text from the image"
             )
 
-        except DuplicateKeyError:
-            duplicates.append(
-                stock["ticker"]
+        # -----------------------------
+        # 4. Parse stock data
+        # -----------------------------
+
+        parsed_stocks = parse_stock_data(
+            extracted_text
+        )
+
+        print("========== PARSED STOCKS ==========")
+        print(parsed_stocks)
+        print("====================================")
+
+        if not parsed_stocks:
+            raise HTTPException(
+                status_code=400,
+                detail="No valid stock data found in the image"
             )
 
-            formatted_stock = format_stock(
-                stock
-            )
+        # -----------------------------
+        # 5. Trading date
+        # -----------------------------
 
-            saved_stocks.append(
-                formatted_stock
-            )
-    
+        trading_date = date.today().isoformat()
 
+        # -----------------------------
+        # 6. Save stocks to MongoDB
+        # -----------------------------
 
+        saved_stocks = []
 
-    # -----------------------------
-    # 8. Return response
-    # -----------------------------
+        duplicates = []
 
-    return {
-        "message": "Image processed successfully",
-        "upload_id": upload_id,
-        "filename": file.filename,
-        "processed_image": processed_filename,
-        "ocr_text": extracted_text,
-        "stocks": saved_stocks,
-        "detected": len(parsed_stocks),
-        "new_records": new_records,
-        "duplicates": len(duplicates)
-    }
+        new_records = 0
+
+        for stock in parsed_stocks:
+
+            stock["trading_date"] = trading_date
+
+            try:
+
+                stock_id = save_stock_snapshot(
+                    stock
+                )
+
+                new_records += 1
+
+                formatted_stock = format_stock(
+                    stock
+                )
+
+                formatted_stock["id"] = stock_id
+
+                saved_stocks.append(
+                    formatted_stock
+                )
+
+            except DuplicateKeyError:
+
+                duplicates.append(
+                    stock["ticker"]
+                )
+
+                formatted_stock = format_stock(
+                    stock
+                )
+
+                saved_stocks.append(
+                    formatted_stock
+                )
+
+        # -----------------------------
+        # 7. Return response
+        # -----------------------------
+
+        return {
+            "message": "Image processed successfully",
+            "filename": file.filename,
+            "ocr_text": extracted_text,
+            "stocks": saved_stocks,
+            "detected": len(parsed_stocks),
+            "new_records": new_records,
+            "duplicates": len(duplicates)
+        }
+
+    finally:
+
+        # -----------------------------
+        # 8. Delete temporary image
+        # -----------------------------
+
+        if temp_file_path and os.path.exists(
+            temp_file_path
+        ):
+            os.remove(temp_file_path)
