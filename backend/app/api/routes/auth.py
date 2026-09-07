@@ -18,6 +18,10 @@ router = APIRouter(
 )
 
 
+# ============================================================
+# Register
+# ============================================================
+
 @router.post("/register")
 def register(request: RegisterRequest):
 
@@ -40,6 +44,10 @@ def register(request: RegisterRequest):
     }
 
 
+# ============================================================
+# Login
+# ============================================================
+
 @router.post("/login")
 def login(request: LoginRequest):
 
@@ -54,8 +62,10 @@ def login(request: LoginRequest):
             detail="Invalid email or password"
         )
 
+    # Use numeric application-level user_id
+    # instead of MongoDB's internal _id.
     token = create_access_token({
-        "user_id": str(user["_id"]),
+        "user_id": user["user_id"],
         "email": user["email"],
         "role": user["role"]
     })
@@ -65,6 +75,7 @@ def login(request: LoginRequest):
         "access_token": token,
         "token_type": "bearer",
         "user": {
+            "user_id": user["user_id"],
             "name": user["name"],
             "email": user["email"],
             "role": user["role"]

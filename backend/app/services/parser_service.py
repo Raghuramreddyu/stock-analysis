@@ -1,25 +1,41 @@
 import re
 
 
+# ============================================================
+# Basic Cleaning
+# ============================================================
+
 def clean_line(line):
     """
-    Clean OCR line while preserving useful decimal/percentage characters.
+    Clean OCR text while preserving useful
+    decimal and percentage characters.
     """
-    line = line.strip()
 
+    line = line.strip()
     line = line.replace("$", "")
     line = line.replace(",", "")
 
     return line
 
 
+# ============================================================
+# Number Parsing
+# ============================================================
+
 def parse_number(value):
     """
     Convert OCR text into a float.
     """
-    value = clean_line(value)
 
-    match = re.search(r"-?\d+(?:\.\d+)?", value)
+    if value is None:
+        return None
+
+    value = clean_line(str(value))
+
+    match = re.search(
+        r"-?\d+(?:\.\d+)?",
+        value
+    )
 
     if not match:
         return None
@@ -30,40 +46,96 @@ def parse_number(value):
         return None
 
 
+# ============================================================
+# Percentage Parsing
+# ============================================================
+
 def parse_percentage(value):
     """
-    Parse percentage values.
+    Parse a percentage value.
 
-    Handles OCR errors such as:
-        4.38%  -> 4.38
-        438%   -> 4.38
+    Examples:
+        4.38% -> 4.38
+        0.59% -> 0.59
+        103%  -> 103
 
-    The second case can happen when OCR loses the decimal point.
+    IMPORTANT:
+    Volume percentage can legitimately be greater than 100,
+    so we do NOT automatically divide values above 100.
     """
-    value = clean_line(value)
+
+    if value is None:
+        return None
+
+    value = clean_line(str(value))
 
     number = parse_number(value)
 
     if number is None:
         return None
 
-    # OCR sometimes removes the decimal point.
-    # Example:
-    # 4.38% -> 438%
-    #
-    # Since stock daily percentage changes above 100% are highly
-    # suspicious for this type of market-mover data, repair them.
+    return number
+
+
+# ============================================================
+# Change Percentage Parsing
+# ============================================================
+
+def parse_change_percentage(value):
+    """
+    Parse daily stock price percentage change.
+
+    If OCR loses a decimal point and produces something like:
+
+        108% instead of 1.08%
+
+    repair it to:
+
+        1.08
+    """
+
+    number = parse_percentage(value)
+
+    if number is None:
+        return None
+
+    # Daily price changes above 100% are extremely unusual.
+    # This is therefore treated as a likely OCR decimal-loss error.
     if number > 100:
         number = number / 100
 
     return number
 
 
+# ============================================================
+# Ticker Normalization
+# ============================================================
+
 def normalize_ticker(ticker):
     """
-    Normalize ticker text and fix common OCR mistakes.
+    Normalize ticker text and repair common OCR duplication.
+
+    Example OCR errors:
+
+        BPBPOP -> BPOP
+        SHSHIP -> SHIP
+        DEDELL -> DELL
+        ININSW -> INSW
+        DHDHT  -> DHT
+        FRFRO  -> FRO
+        TITILE -> TILE
+        BEBEN  -> BEN
+        SBSBLK -> SBLK
+        NVNVDA -> NVDA
+        VLVLO  -> VLO
+        STSTNG -> STNG
+        PSPSX  -> PSX
     """
-    ticker = ticker.strip().upper()
+
+    if ticker is None:
+        return ""
+
+    ticker = str(ticker).strip().upper()
 
     ticker = re.sub(
         r"[^A-Z0-9]",
@@ -71,10 +143,36 @@ def normalize_ticker(ticker):
         ticker
     )
 
-    # Common OCR correction.
+    # --------------------------------------------------------
+    # OCR duplication repair
+    # --------------------------------------------------------
     #
-    # AJG is sometimes recognized as AUG because
-    # OCR confuses J and U.
+    # The OCR output from the supplied screenshot is producing
+    # a two-character prefix before the actual ticker.
+    #
+    # Example:
+    #
+    # BP + BPOP = BPBPOP
+    # SH + SHIP = SHSHIP
+    # DE + DELL = DEDELL
+    #
+    # Remove the first two characters when the resulting
+    # value is a valid ticker.
+    # --------------------------------------------------------
+
+    if len(ticker) >= 5:
+        possible_ticker = ticker[2:]
+
+        if re.fullmatch(
+            r"[A-Z]{1,5}",
+            possible_ticker
+        ):
+            ticker = possible_ticker
+
+    # --------------------------------------------------------
+    # Common OCR corrections
+    # --------------------------------------------------------
+
     ocr_corrections = {
         "AUG": "AJG",
     }
@@ -85,10 +183,15 @@ def normalize_ticker(ticker):
     )
 
 
+# ============================================================
+# Ticker Validation
+# ============================================================
+
 def is_ticker(value):
     """
     Basic ticker validation.
     """
+
     value = normalize_ticker(value)
 
     return bool(
@@ -99,18 +202,126 @@ def is_ticker(value):
     )
 
 
+# ============================================================
+# Recover Change From Price + Percentage
+# ============================================================
+
+def calculate_expected_change(
+    price,
+    change_percent
+):
+    """
+    Calculate the expected price change from:
+
+        Current Price
+        Daily % Change
+
+    Formula:
+
+        Change =
+        Price * Percentage / (100 + Percentage)
+
+    Example:
+
+        Price = 172.34
+        Change % = 0.59
+
+        Change ≈ 1.01
+    """
+
+    if price is None:
+        return None
+
+    if change_percent is None:
+        return None
+
+    denominator = 100 + change_percent
+
+    if denominator == 0:
+        return None
+
+    change = (
+        price
+        * change_percent
+        / denominator
+    )
+
+    return round(
+        change,
+        2
+    )
+
+
+# ============================================================
+# Validate Change
+# ============================================================
+
+def validate_change(
+    price,
+    change,
+    change_percent
+):
+    """
+    Validate OCR-extracted change.
+
+    If OCR has lost the decimal point:
+
+        1.01 -> 101
+        1.97 -> 197
+
+    the value will be inconsistent with the price and
+    percentage change.
+
+    In that situation, calculate the correct value.
+    """
+
+    expected_change = calculate_expected_change(
+        price,
+        change_percent
+    )
+
+    if expected_change is None:
+        return change
+
+    if change is None:
+        return expected_change
+
+    # --------------------------------------------------------
+    # Compare OCR value against mathematically expected value.
+    # --------------------------------------------------------
+
+    difference = abs(
+        change - expected_change
+    )
+
+    # Normal OCR rounding difference.
+    if difference <= 0.05:
+        return round(
+            change,
+            2
+        )
+
+    # --------------------------------------------------------
+    # OCR value is clearly corrupted.
+    # Use the calculated value.
+    # --------------------------------------------------------
+
+    return expected_change
+
+
+# ============================================================
+# Row-Based Parser
+# ============================================================
+
 def parse_row_based(lines):
     """
     Parse traditional row-based OCR:
 
-    Ticker Price Chg %Chg Vol%Chg
+        Ticker Price Chg %Chg Vol%Chg
 
     Example:
-    ASND 270.21 2.90 1.08% 85%
 
-    If OCR corrupts the Change value but Price and
-    Change % are available, estimate the Change value
-    from those two values.
+        BPOP 172.34 1.01 0.59% 103%
     """
 
     stocks = []
@@ -122,56 +333,74 @@ def parse_row_based(lines):
         if len(parts) < 5:
             continue
 
-        ticker = normalize_ticker(parts[0])
+        # ----------------------------------------------------
+        # Ticker
+        # ----------------------------------------------------
+
+        ticker = normalize_ticker(
+            parts[0]
+        )
 
         if not is_ticker(ticker):
             continue
 
-        price = parse_number(parts[1])
-        change = parse_number(parts[2])
-        change_percent = parse_percentage(parts[3])
-        volume_change_percent = parse_percentage(parts[4])
+        # ----------------------------------------------------
+        # Price
+        # ----------------------------------------------------
+
+        price = parse_number(
+            parts[1]
+        )
 
         if price is None:
             continue
 
+        # ----------------------------------------------------
+        # Change
+        # ----------------------------------------------------
+
+        change = parse_number(
+            parts[2]
+        )
+
+        # ----------------------------------------------------
+        # Daily Change %
+        # ----------------------------------------------------
+
+        change_percent = parse_change_percentage(
+            parts[3]
+        )
+
         if change_percent is None:
             continue
+
+        # ----------------------------------------------------
+        # Volume Change %
+        # ----------------------------------------------------
+
+        volume_change_percent = parse_percentage(
+            parts[4]
+        )
 
         if volume_change_percent is None:
             continue
 
-        # --------------------------------------------------
-        # Recover corrupted OCR change value
-        # --------------------------------------------------
-        #
-        # Example:
-        #
-        # Current Price = 63.86
-        # Change %      = 1.87%
-        #
-        # Previous Price ≈ 63.86 / 1.0187
-        #
-        # Change ≈ 63.86 - Previous Price
-        #
-        # ≈ 1.17
-        #
-        # This allows us to recover rows where OCR reads
-        # something like "te" instead of "1.17".
-        # --------------------------------------------------
+        # ----------------------------------------------------
+        # Validate / repair Change
+        # ----------------------------------------------------
+
+        change = validate_change(
+            price=price,
+            change=change,
+            change_percent=change_percent
+        )
 
         if change is None:
+            continue
 
-            change = (
-                price
-                * change_percent
-                / (100 + change_percent)
-            )
-
-            change = round(
-                change,
-                2
-            )
+        # ----------------------------------------------------
+        # Store stock
+        # ----------------------------------------------------
 
         stocks.append({
             "ticker": ticker,
@@ -184,7 +413,15 @@ def parse_row_based(lines):
     return stocks
 
 
-def get_section(lines, start_index, end_headers):
+# ============================================================
+# Column Section
+# ============================================================
+
+def get_section(
+    lines,
+    start_index,
+    end_headers
+):
     """
     Return lines belonging to a column section.
     """
@@ -195,9 +432,13 @@ def get_section(lines, start_index, end_headers):
         start_index + 1,
         len(lines)
     ):
+
         line = lines[index].strip()
 
-        if line in end_headers:
+        if line.upper() in {
+            header.upper()
+            for header in end_headers
+        }:
             break
 
         if line:
@@ -206,7 +447,14 @@ def get_section(lines, start_index, end_headers):
     return section
 
 
-def find_header_index(lines, header):
+# ============================================================
+# Header Detection
+# ============================================================
+
+def find_header_index(
+    lines,
+    header
+):
     """
     Find a header in OCR lines.
     """
@@ -223,36 +471,40 @@ def find_header_index(lines, header):
     return -1
 
 
+# ============================================================
+# Column-Based Parser
+# ============================================================
+
 def parse_column_based(lines):
     """
     Parse column-oriented screenshots.
 
-    Example OCR structure:
+    Example:
 
-    Ticker
-    ASND
-    AMG
-    VIRT
+        Ticker
+        BPOP
+        SHIP
+        DELL
 
-    Price
-    270.21
-    361.30
-    63.86
+        Price
+        172.34
+        19.03
+        526.25
 
-    Chg
-    2.90
-    4.83
-    1.17
+        Chg
+        1.01
+        0.50
+        9.86
 
-    % Chg
-    1.08%
-    1.35%
-    1.87%
+        % Chg
+        0.59%
+        2.70%
+        1.91%
 
-    Vol % Chg
-    85%
-    65%
-    56%
+        Vol % Chg
+        103%
+        89%
+        73%
     """
 
     ticker_index = find_header_index(
@@ -298,6 +550,10 @@ def parse_column_based(lines):
         "Market"
     }
 
+    # --------------------------------------------------------
+    # Extract sections
+    # --------------------------------------------------------
+
     tickers = get_section(
         lines,
         ticker_index,
@@ -328,7 +584,10 @@ def parse_column_based(lines):
         headers
     )
 
-    # Keep only valid ticker-looking values.
+    # --------------------------------------------------------
+    # Convert values
+    # --------------------------------------------------------
+
     tickers = [
         normalize_ticker(value)
         for value in tickers
@@ -346,7 +605,7 @@ def parse_column_based(lines):
     ]
 
     percentages = [
-        parse_percentage(value)
+        parse_change_percentage(value)
         for value in percentages
     ]
 
@@ -354,6 +613,10 @@ def parse_column_based(lines):
         parse_percentage(value)
         for value in volumes
     ]
+
+    # --------------------------------------------------------
+    # Match rows
+    # --------------------------------------------------------
 
     count = min(
         len(tickers),
@@ -367,34 +630,56 @@ def parse_column_based(lines):
 
     for index in range(count):
 
-        if prices[index] is None:
+        price = prices[index]
+
+        change = changes[index]
+
+        change_percent = percentages[index]
+
+        volume_change_percent = volumes[index]
+
+        if price is None:
             continue
 
-        if changes[index] is None:
+        if change_percent is None:
             continue
 
-        if percentages[index] is None:
+        if volume_change_percent is None:
             continue
 
-        if volumes[index] is None:
+        # ----------------------------------------------------
+        # Repair corrupted change value
+        # ----------------------------------------------------
+
+        change = validate_change(
+            price=price,
+            change=change,
+            change_percent=change_percent
+        )
+
+        if change is None:
             continue
 
         stocks.append({
             "ticker": tickers[index],
-            "price": prices[index],
-            "change": changes[index],
-            "change_percent": percentages[index],
-            "volume_change_percent": volumes[index]
+            "price": price,
+            "change": change,
+            "change_percent": change_percent,
+            "volume_change_percent": volume_change_percent
         })
 
     return stocks
 
 
+# ============================================================
+# Main Parser
+# ============================================================
+
 def parse_stock_data(text):
     """
     Main stock parser.
 
-    Supports both:
+    Supports:
 
     1. Row-based OCR
     2. Column-based OCR
@@ -413,20 +698,24 @@ def parse_stock_data(text):
 
         lines.append(line)
 
-    # --------------------------------------------------
+    # --------------------------------------------------------
     # Try row-based format first
-    # --------------------------------------------------
+    # --------------------------------------------------------
 
-    row_stocks = parse_row_based(lines)
+    row_stocks = parse_row_based(
+        lines
+    )
 
     if row_stocks:
         return row_stocks
 
-    # --------------------------------------------------
+    # --------------------------------------------------------
     # Try column-based format
-    # --------------------------------------------------
+    # --------------------------------------------------------
 
-    column_stocks = parse_column_based(lines)
+    column_stocks = parse_column_based(
+        lines
+    )
 
     if column_stocks:
         return column_stocks

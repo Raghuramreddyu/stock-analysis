@@ -23,7 +23,7 @@ function Stocks() {
             data.detail || "Failed to fetch stocks."
           );
         }
-
+        console.log("API STOCK DATA:", data.stocks);
         setStocks(data.stocks || []);
       } catch (err) {
         setError(
@@ -99,7 +99,7 @@ function Stocks() {
             </h3>
 
             <p className="mt-0.5 text-xs text-slate-500">
-              Stock snapshots stored in MongoDB
+              Stock market data stored in MongoDB
             </p>
           </div>
         </div>
@@ -182,7 +182,13 @@ function Stocks() {
               <tbody className="divide-y divide-slate-100">
                 {stocks.map((stock, index) => {
                   const changePercent = Number(
-                    stock.changePercent
+                    stock.change_percent
+                  );
+                  console.log(
+                    "CHANGE DEBUG:",
+                    stock.ticker,
+                    stock.change_percent,
+                    Number(stock.change_percent)
                   );
 
                   const isPositive = changePercent > 0;
@@ -190,7 +196,7 @@ function Stocks() {
 
                   return (
                     <tr
-                      key={`${stock.ticker}-${stock.tradingDate}-${index}`}
+                      key={`${stock.ticker}-${stock.trading_date}-${index}`}
                       className="transition hover:bg-slate-50"
                     >
                       {/* Ticker */}
@@ -216,7 +222,7 @@ function Stocks() {
 
                       {/* Date */}
                       <td className="px-5 py-3.5 text-slate-500">
-                        {stock.tradingDate}
+                        {stock.trading_date}
                       </td>
 
                       {/* Price */}
@@ -268,23 +274,23 @@ function Stocks() {
                         <span
                           className={`font-medium ${
                             Number(
-                              stock.volumeChangePercent
+                              stock.volume_change_percent
                             ) > 0
                               ? "text-emerald-600"
                               : Number(
-                                  stock.volumeChangePercent
+                                  stock.volume_change_percent
                                 ) < 0
                               ? "text-red-600"
                               : "text-slate-600"
                           }`}
                         >
                           {Number(
-                            stock.volumeChangePercent
+                            stock.volume_change_percent
                           ) > 0
                             ? "+"
                             : ""}
                           {Number(
-                            stock.volumeChangePercent
+                            stock.volume_change_percent
                           ).toFixed(0)}
                           %
                         </span>
@@ -309,7 +315,7 @@ function Stocks() {
                 </span>
 
                 <h4 className="text-sm font-bold text-slate-900">
-                  Historical Snapshots
+                  Historical Market Data
                 </h4>
               </div>
 
@@ -368,7 +374,7 @@ function Stocks() {
                     {stockHistory.map(
                       (stock, index) => {
                         const changePercent = Number(
-                          stock.changePercent
+                          stock.change_Percent
                         );
 
                         const isPositive =
@@ -379,11 +385,11 @@ function Stocks() {
 
                         return (
                           <tr
-                            key={`${stock.tradingDate}-${index}`}
+                            key={`${stock.trading_date}-${index}`}
                             className="hover:bg-slate-50"
                           >
                             <td className="px-4 py-3 text-slate-500">
-                              {stock.tradingDate}
+                              {stock.trading_date}
                             </td>
 
                             <td className="px-4 py-3 font-semibold text-slate-800">
@@ -435,12 +441,12 @@ function Stocks() {
                             <td className="px-4 py-3">
                               <span className="text-slate-600">
                                 {Number(
-                                  stock.volumeChangePercent
+                                  stock.volume_Change_Percent
                                 ) > 0
                                   ? "+"
                                   : ""}
                                 {Number(
-                                  stock.volumeChangePercent
+                                  stock.volume_Change_Percent
                                 ).toFixed(0)}
                                 %
                               </span>

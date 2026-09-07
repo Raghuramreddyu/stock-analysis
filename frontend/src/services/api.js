@@ -127,10 +127,6 @@ export async function publishStock(stock) {
       },
       body: JSON.stringify({
         ticker: stock.ticker,
-        price: stock.price,
-        change: stock.change,
-        change_percent: stock.change_percent,
-        volume_change_percent: stock.volume_change_percent,
         trading_date: stock.trading_date,
       }),
     }

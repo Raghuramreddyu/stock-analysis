@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-
 import { getUserStocks } from "../services/api";
 
 function PublishedStockTable({ tradingDate, onSelectStock }) {
@@ -75,7 +74,6 @@ function PublishedStockTable({ tradingDate, onSelectStock }) {
 
   return (
     <div className="overflow-hidden">
-
       {/* Table Header */}
       <div className="flex flex-col gap-2 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -101,7 +99,6 @@ function PublishedStockTable({ tradingDate, onSelectStock }) {
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[850px] text-left">
-
           {/* Table Head */}
           <thead className="border-b border-slate-200 bg-slate-50">
             <tr>
@@ -139,21 +136,21 @@ function PublishedStockTable({ tradingDate, onSelectStock }) {
           <tbody className="divide-y divide-slate-100">
             {stocks.map((stock, index) => {
               const change = Number(stock.change);
-              const changePercent = Number(stock.changePercent);
+              const changePercent = Number(
+                stock.change_percent
+              );
 
               const isPositive = change >= 0;
               const isPercentPositive = changePercent >= 0;
 
               return (
                 <tr
-                  key={`${stock.ticker}-${stock.tradingDate}-${index}`}
+                  key={`${stock.ticker}-${stock.trading_date}-${index}`}
                   className="group transition hover:bg-slate-50"
                 >
-
                   {/* Ticker */}
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
-
                       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-xs font-bold text-blue-700">
                         {stock.ticker?.slice(0, 2)}
                       </div>
@@ -167,7 +164,6 @@ function PublishedStockTable({ tradingDate, onSelectStock }) {
                           Equity
                         </p>
                       </div>
-
                     </div>
                   </td>
 
@@ -212,9 +208,12 @@ function PublishedStockTable({ tradingDate, onSelectStock }) {
 
                   {/* Volume */}
                   <td className="px-5 py-3.5">
-                    {stock.volumeChangePercent != null ? (
+                    {stock.volume_change_percent != null ? (
                       <span className="font-medium text-slate-700">
-                        {Number(stock.volumeChangePercent).toFixed(2)}%
+                        {Number(
+                          stock.volume_change_percent
+                        ).toFixed(2)}
+                        %
                       </span>
                     ) : (
                       <span className="text-slate-400">
@@ -226,7 +225,7 @@ function PublishedStockTable({ tradingDate, onSelectStock }) {
                   {/* Date */}
                   <td className="px-5 py-3.5">
                     <span className="text-xs font-medium text-slate-500">
-                      {stock.tradingDate || "—"}
+                      {stock.trading_date || "—"}
                     </span>
                   </td>
 
@@ -240,7 +239,6 @@ function PublishedStockTable({ tradingDate, onSelectStock }) {
                       View Details
                     </button>
                   </td>
-
                 </tr>
               );
             })}
@@ -255,7 +253,6 @@ function PublishedStockTable({ tradingDate, onSelectStock }) {
           technical indicators and news.
         </p>
       </div>
-
     </div>
   );
 }
