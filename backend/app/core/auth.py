@@ -8,6 +8,10 @@ from app.services.auth_service import SECRET_KEY, ALGORITHM
 security = HTTPBearer()
 
 
+# ============================================================
+# Get Current User
+# ============================================================
+
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
@@ -27,10 +31,14 @@ def get_current_user(
         if not user_id or not email or not role:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication token"
+                detail="Invalid authentication token",
+                headers={
+                    "WWW-Authenticate": "Bearer"
+                }
             )
 
         return {
+            "_id": user_id,
             "user_id": user_id,
             "email": email,
             "role": role
@@ -39,9 +47,16 @@ def get_current_user(
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token"
+            detail="Invalid or expired token",
+            headers={
+                "WWW-Authenticate": "Bearer"
+            }
         )
 
+
+# ============================================================
+# Require Admin
+# ============================================================
 
 def require_admin(
     current_user: dict = Depends(get_current_user)
@@ -54,6 +69,10 @@ def require_admin(
 
     return current_user
 
+
+# ============================================================
+# Require User
+# ============================================================
 
 def require_user(
     current_user: dict = Depends(get_current_user)

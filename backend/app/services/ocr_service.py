@@ -1,14 +1,23 @@
-import pytesseract
 import cv2
+import pytesseract
 
 
-def extract_text(image_path: str):
+def extract_text(image):
 
-    image = cv2.imread(image_path)
+    """
+    Extract text from a preprocessed OpenCV image.
+
+    The image is supplied directly in memory.
+    No temporary image file is created or stored here.
+    """
 
     if image is None:
-        raise ValueError("Could not read image")
+        raise ValueError(
+            "No image supplied for OCR."
+        )
 
-    text = pytesseract.image_to_string(image)
+    text = pytesseract.image_to_string(
+        image
+    )
 
     return text
