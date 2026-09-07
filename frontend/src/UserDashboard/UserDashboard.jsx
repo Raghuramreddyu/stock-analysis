@@ -9,13 +9,8 @@ import PublishedStockTable from "./PublishedStockTable";
 import UserStockFilter from "./UserStockFilter";
 import StockDetails from "./StockDetails/StockDetails";
 
-
 function UserDashboard() {
-
-  const [currentUser] = useState(
-    getCurrentUser()
-  );
-
+  const [currentUser] = useState(getCurrentUser());
   const [tradingDate, setTradingDate] = useState("");
   const [selectedStock, setSelectedStock] = useState(null);
 
@@ -28,166 +23,224 @@ function UserDashboard() {
     );
   }
 
-
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-slate-100 text-slate-900">
 
       {/* Header */}
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-350 items-center justify-between px-6 py-4">
 
-<header className="border-b border-slate-200 bg-white">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">
+              Stock Analysis
+            </h1>
 
-  <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+            <p className="text-xs text-slate-500">
+              Market Intelligence Platform
+            </p>
+          </div>
 
-    <div>
+          <div className="flex items-center gap-4">
 
-      <h1 className="text-xl font-bold text-slate-900">
-        Stock Analysis
-      </h1>
+            <div className="hidden text-right sm:block">
+              <p className="text-xs text-slate-500">
+                Welcome
+              </p>
 
-      <p className="text-sm text-slate-500">
-        Market Intelligence Platform
-      </p>
+              <p className="text-sm font-semibold text-slate-900">
+                {currentUser?.name}
+              </p>
+            </div>
 
-    </div>
+            <button
+              onClick={() => {
+                logoutUser();
+                window.location.reload();
+              }}
+              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
+            >
+              Logout
+            </button>
 
-
-    <div className="flex items-center gap-4">
-
-      <div className="text-right">
-
-        <p className="text-sm text-slate-500">
-          Welcome
-        </p>
-
-        <p className="font-semibold text-slate-900">
-          {currentUser?.name}
-        </p>
-
-      </div>
-
-
-      <button
-        onClick={() => {
-          logoutUser();
-          window.location.reload();
-        }}
-        className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
-      >
-        Logout
-      </button>
-
-    </div>
-
-  </div>
-
-</header>
+          </div>
+        </div>
+      </header>
 
       {/* Main Dashboard */}
+      <main className="mx-auto max-w-350 px-6 py-7">
 
-      <main className="mx-auto max-w-7xl px-6 py-10">
+        {/* Dashboard Header */}
+        <section className="mb-6">
 
-        {/* Dashboard Introduction */}
-
-        <section className="mb-10">
-
-          <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-blue-600">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-blue-600">
             User Dashboard
           </p>
 
-          <h2 className="text-3xl font-bold text-slate-900 md:text-4xl">
-            Market Intelligence
-          </h2>
+          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
 
-          <p className="mt-3 max-w-2xl text-slate-600">
-            Explore stocks researched and published by our admin team.
-          </p>
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight text-slate-900">
+                Market Intelligence
+              </h2>
 
+              <p className="mt-1 max-w-2xl text-sm text-slate-500">
+                Explore stocks researched and published by our admin team.
+              </p>
+            </div>
+
+          </div>
         </section>
 
-
-        {/* Dashboard Sections */}
-
-        <section className="grid gap-6 md:grid-cols-3">
+        {/* Dashboard Summary Cards */}
+        <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
           {/* Published Stocks */}
+          <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
 
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-2xl">
-              📊
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Published Stocks
+                </p>
+
+                <p className="mt-1 text-2xl font-bold text-slate-900">
+                  —
+                </p>
+              </div>
+
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-lg">
+                📊
+              </div>
+
             </div>
 
-            <h3 className="text-lg font-semibold text-slate-900">
-              Published Stocks
-            </h3>
-
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              View stocks selected and published by the admin.
+            <p className="mt-2 text-xs text-slate-400">
+              Admin-approved stocks
             </p>
 
           </div>
-
 
           {/* Market Analysis */}
+          <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
 
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-green-50 text-2xl">
-              📈
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Market Analysis
+                </p>
+
+                <p className="mt-1 text-2xl font-bold text-slate-900">
+                  —
+                </p>
+              </div>
+
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50 text-lg">
+                📈
+              </div>
+
             </div>
 
-            <h3 className="text-lg font-semibold text-slate-900">
-              Market Analysis
-            </h3>
-
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Analyze selected stocks using market data and indicators.
+            <p className="mt-2 text-xs text-slate-400">
+              Technical market insights
             </p>
 
           </div>
 
-
           {/* Research */}
+          <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
 
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-purple-50 text-2xl">
-              🔎
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Research
+                </p>
+
+                <p className="mt-1 text-2xl font-bold text-slate-900">
+                  —
+                </p>
+              </div>
+
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50 text-lg">
+                🔎
+              </div>
+
             </div>
 
-            <h3 className="text-lg font-semibold text-slate-900">
-              Research
-            </h3>
+            <p className="mt-2 text-xs text-slate-400">
+              News and stock research
+            </p>
 
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Explore research, news, sentiment and predictions.
+          </div>
+
+          {/* Predictions */}
+          <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+
+            <div className="flex items-center justify-between">
+
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Predictions
+                </p>
+
+                <p className="mt-1 text-2xl font-bold text-slate-900">
+                  —
+                </p>
+              </div>
+
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-lg">
+                🎯
+              </div>
+
+            </div>
+
+            <p className="mt-2 text-xs text-slate-400">
+              Future prediction module
             </p>
 
           </div>
 
         </section>
 
+        {/* Stocks Section */}
+        <section>
 
-        {/* Published Stocks */}
+          <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 
-        <section className="mt-10">
+            <div>
+              <h3 className="text-xl font-bold text-slate-900">
+                Published Stocks
+              </h3>
 
+              <p className="mt-1 text-sm text-slate-500">
+                Stocks selected and published by the admin team.
+              </p>
+            </div>
+
+          </div>
+
+          {/* Filter */}
+          <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <UserStockFilter
               onDateChange={setTradingDate}
             />
+          </div>
 
+          {/* Stock Table */}
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
             <PublishedStockTable
               tradingDate={tradingDate}
               onSelectStock={setSelectedStock}
             />
+          </div>
 
         </section>
 
       </main>
-
     </div>
   );
 }
-
 
 export default UserDashboard;

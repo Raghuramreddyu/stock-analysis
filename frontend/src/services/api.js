@@ -1,6 +1,5 @@
 const API_BASE_URL = "http://127.0.0.1:8000/api";
 
-
 export async function loginUser(email, password) {
   const response = await fetch(`${API_BASE_URL}/auth/login`, {
     method: "POST",
@@ -25,7 +24,6 @@ export async function loginUser(email, password) {
   return data;
 }
 
-
 export async function registerUser(name, email, password) {
   const response = await fetch(`${API_BASE_URL}/auth/register`, {
     method: "POST",
@@ -48,11 +46,9 @@ export async function registerUser(name, email, password) {
   return data;
 }
 
-
 export function getAccessToken() {
   return localStorage.getItem("access_token");
 }
-
 
 export function getCurrentUser() {
   const user = localStorage.getItem("user");
@@ -64,12 +60,10 @@ export function getCurrentUser() {
   return JSON.parse(user);
 }
 
-
 export function logoutUser() {
   localStorage.removeItem("access_token");
   localStorage.removeItem("user");
 }
-
 
 export async function uploadStockImage(file) {
   const token = getAccessToken();
@@ -95,7 +89,6 @@ export async function uploadStockImage(file) {
 }
 
 export async function getUserStocks(tradingDate = "") {
-
   const token = getAccessToken();
 
   let url = `${API_BASE_URL}/user/stocks`;
@@ -122,19 +115,16 @@ export async function getUserStocks(tradingDate = "") {
 }
 
 export async function publishStock(stock) {
-
   const token = getAccessToken();
 
   const response = await fetch(
     `${API_BASE_URL}/admin/stocks/publish`,
     {
       method: "POST",
-
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-
       body: JSON.stringify({
         ticker: stock.ticker,
         price: stock.price,
@@ -158,20 +148,17 @@ export async function publishStock(stock) {
 }
 
 export async function publishAllStocks(stocks) {
-
   const token = getAccessToken();
 
   const response = await fetch(
-    "http://127.0.0.1:8000/api/admin/stocks/publish-all",
+    `${API_BASE_URL}/admin/stocks/publish-all`,
     {
       method: "POST",
-
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
-
-      body: JSON.stringify(stocks)
+      body: JSON.stringify(stocks),
     }
   );
 
@@ -187,7 +174,6 @@ export async function publishAllStocks(stocks) {
 }
 
 export async function getStockHistory(ticker) {
-
   const token = getAccessToken();
 
   const response = await fetch(
@@ -211,7 +197,6 @@ export async function getStockHistory(ticker) {
 }
 
 export async function getStockAnalysis(ticker) {
-
   const token = getAccessToken();
 
   const response = await fetch(

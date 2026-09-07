@@ -4,355 +4,308 @@ import TechnicalAnalysis from "./TechnicalAnalysis";
 import StockNews from "./StockNews";
 import { getStockAnalysis } from "../../services/api";
 
-
 function StockDetails({ stock, onBack }) {
-
   const [activeTab, setActiveTab] = useState("overview");
   const [analysis, setAnalysis] = useState(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState("");
 
-
   useEffect(() => {
-
     async function loadAnalysis() {
-
       if (!stock?.ticker) return;
 
       try {
-
         setAnalysisLoading(true);
         setAnalysisError("");
 
         const data = await getStockAnalysis(stock.ticker);
-
         setAnalysis(data);
-
       } catch (err) {
-
         setAnalysisError(err.message || "Failed to load analysis");
-
       } finally {
-
         setAnalysisLoading(false);
-
       }
     }
 
     loadAnalysis();
-
   }, [stock?.ticker]);
-
 
   if (!stock) {
     return (
-      <div className="min-h-screen bg-slate-50 p-6">
-
-        <div className="mx-auto max-w-7xl">
-
+      <div className="min-h-screen bg-slate-100 p-6">
+        <div className="mx-auto max-w-[1400px]">
           <button
             onClick={onBack}
-            className="mb-6 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="mb-5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             ← Back to Stocks
           </button>
 
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-
+          <div className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm">
             <h2 className="text-xl font-semibold text-slate-900">
               Stock Not Found
             </h2>
 
-            <p className="mt-2 text-slate-500">
+            <p className="mt-2 text-sm text-slate-500">
               Please select a stock from the published stocks list.
             </p>
-
           </div>
-
         </div>
-
       </div>
     );
   }
-
 
   const price = Number(stock.price);
   const change = Number(stock.change);
   const changePercent = Number(stock.changePercent);
   const volumePercent = Number(stock.volumeChangePercent);
 
-
   const isPositive = change >= 0;
 
+  const formatNumber = (value) => {
+    return Number.isFinite(value) ? value.toFixed(2) : "-";
+  };
+
+  const formatPercent = (value) => {
+    return Number.isFinite(value)
+      ? `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`
+      : "-";
+  };
+
+  const getTrendClass = (value) => {
+    const normalized = String(value || "").toLowerCase();
+
+    if (
+      normalized.includes("bullish") ||
+      normalized.includes("positive")
+    ) {
+      return "text-green-600";
+    }
+
+    if (
+      normalized.includes("bearish") ||
+      normalized.includes("negative")
+    ) {
+      return "text-red-600";
+    }
+
+    return "text-slate-600";
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-
+    <div className="min-h-screen bg-slate-100 text-slate-900">
       {/* Header */}
-
       <header className="border-b border-slate-200 bg-white">
-
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-
+        <div className="mx-auto flex max-w-[1400px] items-center justify-between px-6 py-4">
           <div>
-
-            <p className="text-sm text-slate-500">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
               Stock Analysis
             </p>
 
-            <h1 className="text-xl font-bold text-slate-900">
-              Stock Details
+            <h1 className="text-lg font-bold text-slate-900">
+              Market Intelligence
             </h1>
-
           </div>
-
 
           <button
             onClick={onBack}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
           >
             ← Back to Stocks
           </button>
-
         </div>
-
       </header>
 
-
       {/* Main */}
-
-      <main className="mx-auto max-w-7xl px-6 py-10">
-
-        {/* Stock Heading */}
-
-        <section className="mb-8">
-
-          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-
+      <main className="mx-auto max-w-[1400px] px-6 py-6">
+        {/* Stock Header */}
+        <section className="mb-5 rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-lg font-bold text-white">
+                  {stock.ticker?.slice(0, 2)}
+                </div>
 
-              <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-blue-600">
-                Published Stock
-              </p>
+                <div>
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-3xl font-bold tracking-tight text-slate-900">
+                      {stock.ticker}
+                    </h2>
 
-              <div className="flex items-center gap-4">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        isPositive
+                          ? "bg-green-50 text-green-700"
+                          : "bg-red-50 text-red-700"
+                      }`}
+                    >
+                      {isPositive ? "Positive" : "Negative"}
+                    </span>
+                  </div>
 
-                <h2 className="text-4xl font-bold text-slate-900">
-                  {stock.ticker}
-                </h2>
-
-                <span
-                  className={`rounded-full px-3 py-1 text-sm font-semibold ${
-                    isPositive
-                      ? "bg-green-50 text-green-600"
-                      : "bg-red-50 text-red-600"
-                  }`}
-                >
-                  {isPositive ? "Positive" : "Negative"}
-                </span>
-
+                  <p className="mt-1 text-sm text-slate-500">
+                    Admin-published market intelligence
+                  </p>
+                </div>
               </div>
-
-              <p className="mt-2 text-slate-500">
-                Market data published by the admin
-              </p>
-
             </div>
 
-
-            <div className="text-left md:text-right">
-
-              <p className="text-sm text-slate-500">
+            <div className="rounded-lg bg-slate-50 px-5 py-3 md:text-right">
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                 Trading Date
               </p>
 
-              <p className="font-semibold text-slate-900">
+              <p className="mt-1 text-sm font-semibold text-slate-900">
                 {stock.tradingDate || "-"}
               </p>
-
             </div>
-
           </div>
-
         </section>
-
 
         {/* Key Metrics */}
-
-        <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-
+        <section className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Price */}
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-
-            <p className="text-sm font-medium text-slate-500">
-              Current Price
-            </p>
-
-            <p className="mt-2 text-3xl font-bold text-slate-900">
-              ${price.toFixed(2)}
-            </p>
-
-          </div>
-
-
-          {/* Change */}
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-
-            <p className="text-sm font-medium text-slate-500">
-              Daily Change
-            </p>
-
-            <p
-              className={`mt-2 text-3xl font-bold ${
-                isPositive
-                  ? "text-green-600"
-                  : "text-red-600"
-              }`}
-            >
-              {change >= 0 ? "+" : ""}
-              {change.toFixed(2)}
-            </p>
-
-          </div>
-
-
-          {/* Change % */}
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-
-            <p className="text-sm font-medium text-slate-500">
-              Change %
-            </p>
-
-            <p
-              className={`mt-2 text-3xl font-bold ${
-                isPositive
-                  ? "text-green-600"
-                  : "text-red-600"
-              }`}
-            >
-              {changePercent >= 0 ? "+" : ""}
-              {changePercent.toFixed(2)}%
-            </p>
-
-          </div>
-
-
-          {/* Volume */}
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-
-            <p className="text-sm font-medium text-slate-500">
-              Volume Change
-            </p>
-
-            <p className="mt-2 text-3xl font-bold text-slate-900">
-              {volumePercent >= 0 ? "+" : ""}
-              {volumePercent.toFixed(2)}%
-            </p>
-
-          </div>
-
-        </section>
-
-
-        {/* Navigation Tabs */}
-
-        <section className="mt-10">
-
-          <div className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
-
-            <button
-              onClick={() => setActiveTab("overview")}
-              className={`rounded-lg px-5 py-2.5 text-sm font-semibold transition ${
-                activeTab === "overview"
-                  ? "bg-blue-600 text-white"
-                  : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              Overview
-            </button>
-
-
-            <button
-              onClick={() => setActiveTab("chart")}
-              className={`rounded-lg px-5 py-2.5 text-sm font-semibold transition ${
-                activeTab === "chart"
-                  ? "bg-blue-600 text-white"
-                  : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              Price Chart
-            </button>
-
-
-            <button
-              onClick={() => setActiveTab("technical")}
-              className={`rounded-lg px-5 py-2.5 text-sm font-semibold transition ${
-                activeTab === "technical"
-                  ? "bg-blue-600 text-white"
-                  : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              Technical
-            </button>
-
-
-            <button
-              onClick={() => setActiveTab("news")}
-              className={`rounded-lg px-5 py-2.5 text-sm font-semibold transition ${
-                activeTab === "news"
-                  ? "bg-blue-600 text-white"
-                  : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              News
-            </button>
-
-
-            <button
-              onClick={() => setActiveTab("prediction")}
-              className={`rounded-lg px-5 py-2.5 text-sm font-semibold transition ${
-                activeTab === "prediction"
-                  ? "bg-blue-600 text-white"
-                  : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              Prediction
-            </button>
-
-          </div>
-
-        </section>
-
-
-        {/* Content */}
-
-        <section className="mt-6">
-
-          {activeTab === "overview" && (
-
-            <div className="grid gap-6 lg:grid-cols-2">
-
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-
-                <h3 className="text-xl font-semibold text-slate-900">
-                  Stock Overview
-                </h3>
-
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  This section will contain a detailed summary of the
-                  selected stock using market data and research.
+          <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Current Price
                 </p>
 
+                <p className="mt-2 text-2xl font-bold text-slate-900">
+                  ${formatNumber(price)}
+                </p>
+              </div>
 
-                <div className="mt-6 space-y-4">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-lg">
+                $
+              </div>
+            </div>
+          </div>
 
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          {/* Daily Change */}
+          <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Daily Change
+                </p>
 
+                <p
+                  className={`mt-2 text-2xl font-bold ${
+                    isPositive ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {change >= 0 ? "+" : ""}
+                  {formatNumber(change)}
+                </p>
+              </div>
+
+              <div
+                className={`flex h-9 w-9 items-center justify-center rounded-lg text-lg ${
+                  isPositive
+                    ? "bg-green-50 text-green-600"
+                    : "bg-red-50 text-red-600"
+                }`}
+              >
+                {isPositive ? "↗" : "↘"}
+              </div>
+            </div>
+          </div>
+
+          {/* Change % */}
+          <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Change %
+                </p>
+
+                <p
+                  className={`mt-2 text-2xl font-bold ${
+                    isPositive ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {formatPercent(changePercent)}
+                </p>
+              </div>
+
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-50 text-lg text-green-600">
+                %
+              </div>
+            </div>
+          </div>
+
+          {/* Volume */}
+          <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Volume Change
+                </p>
+
+                <p className="mt-2 text-2xl font-bold text-slate-900">
+                  {formatPercent(volumePercent)}
+                </p>
+              </div>
+
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-50 text-lg">
+                📊
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Tabs */}
+        <section className="mb-5">
+          <div className="flex overflow-x-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-sm">
+            {[
+              ["overview", "Overview"],
+              ["chart", "Price Chart"],
+              ["technical", "Technical"],
+              ["news", "News"],
+              ["prediction", "Prediction"],
+            ].map(([tab, label]) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`whitespace-nowrap rounded-lg px-5 py-2.5 text-sm font-semibold transition ${
+                  activeTab === tab
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Content */}
+        <section>
+          {/* Overview */}
+          {activeTab === "overview" && (
+            <div className="grid gap-5 lg:grid-cols-2">
+              {/* Stock Summary */}
+              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="mb-5">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                    Market Data
+                  </p>
+
+                  <h3 className="mt-1 text-xl font-bold text-slate-900">
+                    Stock Overview
+                  </h3>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Current published information for this stock.
+                  </p>
+                </div>
+
+                <div className="divide-y divide-slate-100">
+                  <div className="flex items-center justify-between py-3">
                     <span className="text-sm text-slate-500">
                       Ticker
                     </span>
@@ -360,25 +313,62 @@ function StockDetails({ stock, onBack }) {
                     <span className="font-semibold text-slate-900">
                       {stock.ticker}
                     </span>
-
                   </div>
 
-
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-
+                  <div className="flex items-center justify-between py-3">
                     <span className="text-sm text-slate-500">
-                      Price
+                      Current Price
                     </span>
 
                     <span className="font-semibold text-slate-900">
-                      ${price.toFixed(2)}
+                      ${formatNumber(price)}
                     </span>
-
                   </div>
 
+                  <div className="flex items-center justify-between py-3">
+                    <span className="text-sm text-slate-500">
+                      Daily Change
+                    </span>
 
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <span
+                      className={`font-semibold ${
+                        isPositive
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {change >= 0 ? "+" : ""}
+                      {formatNumber(change)}
+                    </span>
+                  </div>
 
+                  <div className="flex items-center justify-between py-3">
+                    <span className="text-sm text-slate-500">
+                      Change %
+                    </span>
+
+                    <span
+                      className={`font-semibold ${
+                        isPositive
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {formatPercent(changePercent)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between py-3">
+                    <span className="text-sm text-slate-500">
+                      Volume Change
+                    </span>
+
+                    <span className="font-semibold text-slate-900">
+                      {formatPercent(volumePercent)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between py-3">
                     <span className="text-sm text-slate-500">
                       Trading Date
                     </span>
@@ -386,169 +376,162 @@ function StockDetails({ stock, onBack }) {
                     <span className="font-semibold text-slate-900">
                       {stock.tradingDate || "-"}
                     </span>
-
                   </div>
-
-
-                  <div className="flex items-center justify-between">
-
-                    <span className="text-sm text-slate-500">
-                      Published By
-                    </span>
-
-                    <span className="font-semibold text-slate-900">
-                      Admin
-                    </span>
-
-                  </div>
-
                 </div>
-
               </div>
 
+              {/* Analysis Summary */}
+              <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <div className="mb-5">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                    Intelligence
+                  </p>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <h3 className="mt-1 text-xl font-bold text-slate-900">
+                    Analysis Summary
+                  </h3>
 
-                <h3 className="text-xl font-semibold text-slate-900">
-                  Analysis Summary
-                </h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Analysis generated from the available market data.
+                  </p>
+                </div>
 
                 {analysisLoading && (
-                  <p className="mt-4 text-sm text-slate-500">
-                    Loading analysis data...
-                  </p>
+                  <div className="flex items-center gap-3 rounded-lg bg-slate-50 p-4">
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+
+                    <p className="text-sm text-slate-500">
+                      Loading analysis data...
+                    </p>
+                  </div>
                 )}
 
                 {analysisError && (
-                  <p className="mt-4 text-sm text-red-600">
-                    {analysisError}
-                  </p>
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                    <p className="text-sm font-medium text-red-600">
+                      {analysisError}
+                    </p>
+                  </div>
                 )}
 
                 {!analysisLoading && !analysisError && analysis && (
-                  <div className="mt-6 space-y-4">
-
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-
+                  <div className="divide-y divide-slate-100">
+                    <div className="flex items-center justify-between py-4">
                       <span className="text-sm text-slate-500">
                         Recommendation
                       </span>
 
-                      <span className={`font-bold ${
-                        analysis.recommendation === "Bullish" 
-                          ? "text-green-600" 
-                          : analysis.recommendation === "Bearish"
-                            ? "text-red-600"
-                            : "text-slate-600"
-                      }`}>
+                      <span
+                        className={`font-bold ${getTrendClass(
+                          analysis.recommendation
+                        )}`}
+                      >
                         {analysis.recommendation || "N/A"}
                       </span>
-
                     </div>
 
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-
+                    <div className="flex items-center justify-between py-4">
                       <span className="text-sm text-slate-500">
                         Sentiment
                       </span>
 
-                      <span className={`font-bold ${
-                        analysis.overall_sentiment_label === "Bullish" || analysis.overall_sentiment_label === "bullish"
-                          ? "text-green-600"
-                          : analysis.overall_sentiment_label === "Bearish" || analysis.overall_sentiment_label === "bearish"
-                            ? "text-red-600"
-                            : "text-slate-600"
-                      }`}>
+                      <span
+                        className={`font-bold ${getTrendClass(
+                          analysis.overall_sentiment_label
+                        )}`}
+                      >
                         {analysis.overall_sentiment_label || "N/A"}
                       </span>
-
                     </div>
 
-                    <div className="flex items-center justify-between">
-
+                    <div className="flex items-center justify-between py-4">
                       <span className="text-sm text-slate-500">
                         Trend
                       </span>
 
-                      <span className={`font-bold ${
-                        analysis.trend === "bullish"
-                          ? "text-green-600"
-                          : analysis.trend === "bearish"
-                            ? "text-red-600"
-                            : "text-slate-600"
-                      }`}>
-                        {analysis.trend?.charAt(0).toUpperCase() + analysis.trend?.slice(1) || "N/A"}
+                      <span
+                        className={`font-bold ${getTrendClass(
+                          analysis.trend
+                        )}`}
+                      >
+                        {analysis.trend
+                          ? analysis.trend.charAt(0).toUpperCase() +
+                            analysis.trend.slice(1)
+                          : "N/A"}
                       </span>
-
                     </div>
-
                   </div>
                 )}
 
                 {!analysisLoading && !analysis && !analysisError && (
-                  <p className="mt-4 text-sm text-slate-500">
-                    Unable to load analysis data.
-                  </p>
+                  <div className="rounded-lg bg-slate-50 p-5 text-center">
+                    <p className="text-sm text-slate-500">
+                      Analysis data is currently unavailable.
+                    </p>
+                  </div>
                 )}
-
               </div>
-
             </div>
-
           )}
 
-
+          {/* Chart */}
           {activeTab === "chart" && (
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <StockChart ticker={stock.ticker} />
+            </div>
+          )}
 
-            <StockChart
-                ticker={stock.ticker}
-            />
-
-        )}
-
-
+          {/* Technical Analysis */}
           {activeTab === "technical" && (
-
-            <TechnicalAnalysis ticker={stock.ticker} />
-
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <TechnicalAnalysis ticker={stock.ticker} />
+            </div>
           )}
 
-
+          {/* News */}
           {activeTab === "news" && (
-
-            <StockNews ticker={stock.ticker} />
-
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <StockNews ticker={stock.ticker} />
+            </div>
           )}
 
-
+          {/* Prediction */}
           {activeTab === "prediction" && (
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-
-              <div className="mb-4 text-5xl">
+            <div className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-blue-50 text-2xl">
                 🤖
               </div>
 
-              <h3 className="text-xl font-semibold text-slate-900">
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                Future Module
+              </p>
+
+              <h3 className="mt-1 text-xl font-bold text-slate-900">
                 Stock Prediction
               </h3>
 
-              <p className="mx-auto mt-2 max-w-xl text-slate-500">
+              <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">
                 Prediction models for 1, 3, 5 and 10 trading days
-                will be added after we collect sufficient market data.
+                will be added after sufficient historical market data
+                is collected.
               </p>
 
+              <div className="mx-auto mt-5 flex max-w-md flex-wrap justify-center gap-2">
+                {["1 Day", "3 Days", "5 Days", "10 Days"].map((period) => (
+                  <span
+                    key={period}
+                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-500"
+                  >
+                    {period}
+                  </span>
+                ))}
+              </div>
             </div>
-
           )}
-
         </section>
-
       </main>
-
     </div>
   );
 }
-
 
 export default StockDetails;

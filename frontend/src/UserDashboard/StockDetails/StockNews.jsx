@@ -1,211 +1,314 @@
 import { useEffect, useState } from "react";
-
 import { getStockAnalysis } from "../../services/api";
 
-
 function StockNews({ ticker }) {
-
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-
   useEffect(() => {
-
     async function loadAnalysis() {
+      if (!ticker) return;
 
       try {
-
         setLoading(true);
         setError("");
 
         const data = await getStockAnalysis(ticker);
-
         setAnalysis(data);
-
       } catch (err) {
-
         setError(
           err.message || "Failed to load news sentiment."
         );
-
       } finally {
-
         setLoading(false);
-
       }
     }
 
-    if (ticker) {
-      loadAnalysis();
-    }
-
+    loadAnalysis();
   }, [ticker]);
 
-
   if (loading) {
-
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-
-        <p className="text-slate-500">
+      <div className="flex min-h-[300px] items-center justify-center">
+        <div className="flex items-center gap-3 text-sm text-slate-500">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
           Loading news and sentiment...
-        </p>
-
+        </div>
       </div>
     );
-
   }
-
 
   if (error) {
-
     return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
-
-        <p className="font-medium text-red-600">
+      <div className="rounded-xl border border-red-200 bg-red-50 p-5">
+        <p className="text-sm font-medium text-red-600">
           {error}
         </p>
-
       </div>
     );
-
   }
 
-
-  if (!analysis || !analysis.articles || analysis.articles.length === 0) {
-
+  if (
+    !analysis ||
+    !analysis.articles ||
+    analysis.articles.length === 0
+  ) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm">
-
-        <p className="text-slate-500">
-          No news articles available for this ticker.
-        </p>
-
-      </div>
-    );
-
-  }
-
-
-  const getSentimentColor = (label) => {
-    if (label === "Bullish" || label === "bullish") {
-      return "bg-green-50 text-green-600 border-green-200";
-    } else if (label === "Bearish" || label === "bearish") {
-      return "bg-red-50 text-red-600 border-red-200";
-    } else {
-      return "bg-slate-50 text-slate-600 border-slate-200";
-    }
-  };
-
-
-  const getSentimentText = (label) => {
-    if (label === "Bullish" || label === "bullish") {
-      return "📈 Bullish";
-    } else if (label === "Bearish" || label === "bearish") {
-      return "📉 Bearish";
-    } else {
-      return "➡️ Neutral";
-    }
-  };
-
-
-  return (
-    <div className="space-y-6">
-
-      {/* Sentiment Overview */}
-
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-
-        <h3 className="text-lg font-semibold text-slate-900">
-          Overall Sentiment
-        </h3>
-
-        <div className="mt-4 flex items-center gap-4">
-
-          <div className={`rounded-lg border px-4 py-3 ${getSentimentColor(analysis.overall_sentiment_label)}`}>
-
-            <p className="text-sm font-semibold">
-              {getSentimentText(analysis.overall_sentiment_label)}
-            </p>
-
-            <p className="mt-1 text-xs opacity-75">
-              Score: {analysis.overall_sentiment_score?.toFixed(2) || "N/A"}
-            </p>
-
-          </div>
-
+      <div className="flex min-h-[300px] flex-col items-center justify-center text-center">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-slate-50 text-2xl">
+          📰
         </div>
 
-      </div>
-
-
-      {/* News Articles */}
-
-      <div className="space-y-4">
-
-        <h3 className="text-lg font-semibold text-slate-900">
-          Latest News
+        <h3 className="text-lg font-bold text-slate-900">
+          No News Available
         </h3>
 
-        {analysis.articles.map((article, index) => (
+        <p className="mt-2 max-w-md text-sm text-slate-500">
+          No recent news articles are currently available for {ticker}.
+        </p>
+      </div>
+    );
+  }
 
-          <div 
-            key={index}
-            className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md"
-          >
+  const getSentimentType = (label) => {
+    const value = String(label || "").toLowerCase();
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    if (value === "bullish") return "bullish";
+    if (value === "bearish") return "bearish";
 
-              <div className="flex-1">
+    return "neutral";
+  };
 
-                <a
-                  href={article.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-lg font-semibold text-blue-600 hover:underline"
-                >
-                  {article.title || "Untitled"}
-                </a>
+  const getSentimentStyle = (label) => {
+    const type = getSentimentType(label);
 
-                <div className="mt-2 flex flex-wrap gap-2">
+    if (type === "bullish") {
+      return {
+        badge: "border-green-200 bg-green-50 text-green-700",
+        text: "text-green-600",
+        icon: "📈",
+      };
+    }
 
-                  <span className="inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                    {article.source || "Unknown"}
-                  </span>
+    if (type === "bearish") {
+      return {
+        badge: "border-red-200 bg-red-50 text-red-700",
+        text: "text-red-600",
+        icon: "📉",
+      };
+    }
 
-                  <span className="inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                    {article.time_published ? new Date(article.time_published).toLocaleDateString() : "Date unknown"}
-                  </span>
+    return {
+      badge: "border-slate-200 bg-slate-50 text-slate-600",
+      text: "text-slate-600",
+      icon: "➡️",
+    };
+  };
 
-                </div>
+  const overallStyle = getSentimentStyle(
+    analysis.overall_sentiment_label
+  );
 
-                <p className="mt-3 text-sm text-slate-600">
-                  Sentiment: 
-                  <span className={`ml-2 font-semibold ${
-                    article.sentiment_label === "Bullish" || article.sentiment_label === "bullish"
-                      ? "text-green-600"
-                      : article.sentiment_label === "Bearish" || article.sentiment_label === "bearish"
-                        ? "text-red-600"
-                        : "text-slate-600"
-                  }`}>
-                    {article.sentiment_label || "Neutral"} ({article.sentiment_score?.toFixed(2) || "0.00"})
-                  </span>
-                </p>
+  const overallScore =
+    analysis.overall_sentiment_score !== null &&
+    analysis.overall_sentiment_score !== undefined &&
+    Number.isFinite(Number(analysis.overall_sentiment_score))
+      ? Number(analysis.overall_sentiment_score).toFixed(2)
+      : "N/A";
 
-              </div>
+  return (
+    <div className="space-y-5">
+      {/* Section Header */}
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+          Market Research
+        </p>
 
-            </div>
+        <h3 className="mt-1 text-xl font-bold text-slate-900">
+          News & Sentiment
+        </h3>
 
-          </div>
-
-        ))}
-
+        <p className="mt-1 text-sm text-slate-500">
+          Recent news and sentiment signals for {ticker}.
+        </p>
       </div>
 
+      {/* Overall Sentiment */}
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              Overall Sentiment
+            </p>
+
+            <div className="mt-2 flex items-center gap-3">
+              <div
+                className={`flex h-10 w-10 items-center justify-center rounded-lg border ${overallStyle.badge}`}
+              >
+                {overallStyle.icon}
+              </div>
+
+              <div>
+                <p
+                  className={`text-xl font-bold ${overallStyle.text}`}
+                >
+                  {analysis.overall_sentiment_label || "Neutral"}
+                </p>
+
+                <p className="text-xs text-slate-400">
+                  Aggregated news sentiment
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg bg-slate-50 px-5 py-3">
+            <p className="text-xs text-slate-400">
+              Sentiment Score
+            </p>
+
+            <p className="mt-1 text-lg font-bold text-slate-900">
+              {overallScore}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* News Header */}
+      <div className="flex items-end justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+            Latest Articles
+          </p>
+
+          <h3 className="mt-1 text-lg font-bold text-slate-900">
+            News Feed
+          </h3>
+        </div>
+
+        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+          {analysis.articles.length} article
+          {analysis.articles.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      {/* News Articles */}
+      <div className="space-y-3">
+        {analysis.articles.map((article, index) => {
+          const sentimentStyle = getSentimentStyle(
+            article.sentiment_label
+          );
+
+          const sentimentScore =
+            article.sentiment_score !== null &&
+            article.sentiment_score !== undefined &&
+            Number.isFinite(Number(article.sentiment_score))
+              ? Number(article.sentiment_score).toFixed(2)
+              : "0.00";
+
+          let formattedDate = "Date unknown";
+
+          if (article.time_published) {
+            const parsedDate = new Date(
+              article.time_published
+            );
+
+            if (!Number.isNaN(parsedDate.getTime())) {
+              formattedDate =
+                parsedDate.toLocaleDateString();
+            }
+          }
+
+          return (
+            <article
+              key={`${article.url || article.title || "article"}-${index}`}
+              className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md"
+            >
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                {/* Article Content */}
+                <div className="min-w-0 flex-1">
+                  <a
+                    href={article.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-base font-bold leading-6 text-slate-900 transition hover:text-blue-600"
+                  >
+                    {article.title || "Untitled Article"}
+                  </a>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                      {article.source || "Unknown Source"}
+                    </span>
+
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500">
+                      {formattedDate}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Sentiment */}
+                <div
+                  className={`shrink-0 rounded-lg border px-3 py-2 ${sentimentStyle.badge}`}
+                >
+                  <p className="text-xs font-medium opacity-70">
+                    Sentiment
+                  </p>
+
+                  <p className="mt-0.5 text-sm font-bold">
+                    {sentimentStyle.icon}{" "}
+                    {article.sentiment_label || "Neutral"}
+                  </p>
+
+                  <p className="mt-0.5 text-xs opacity-70">
+                    Score: {sentimentScore}
+                  </p>
+                </div>
+              </div>
+
+              {/* Read Article */}
+              {article.url && (
+                <div className="mt-4 border-t border-slate-100 pt-3">
+                  <a
+                    href={article.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 transition hover:text-blue-700"
+                  >
+                    Read full article
+                    <span>↗</span>
+                  </a>
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </div>
+
+      {/* Information Note */}
+      <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4">
+        <div className="flex gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-sm">
+            ℹ️
+          </div>
+
+          <div>
+            <h4 className="text-sm font-bold text-slate-900">
+              About sentiment
+            </h4>
+
+            <p className="mt-1 text-xs leading-5 text-slate-600">
+              News sentiment represents the tone detected in the
+              available articles. It is an analytical signal and
+              should not be treated as a guaranteed prediction of
+              future stock performance.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
-
 
 export default StockNews;
