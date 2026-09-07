@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+pymongo
+python-dotenv
+pydantic
+python-multipart
+opencv-python
+pytesseract
+numpy
+passlib[bcrypt]
+bcrypt==3.2.2
+python-jose[cryptography]
+requests
+yfinance
